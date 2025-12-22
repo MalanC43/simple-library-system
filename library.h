@@ -1,5 +1,6 @@
+#pragma once
 #include <iostream>
-#include "user.h"
+#include "user_data.h"
 #include "admin.h"
 
 class library{
