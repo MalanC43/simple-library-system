@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string.h>
 #include <bookfunc.h>
-
+#include <user_data.h>
 
 class userfanc{
     public:
@@ -12,4 +12,6 @@ class userfanc{
         void load_my_data(std::string user_name);
         void change_my_info();
         //...
+    private:
+        user_info my_date;
 };

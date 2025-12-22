@@ -5,17 +5,17 @@
 
 class book{
     public:
-        std::string ISBN;
         std::string book_name;
-        std::string write;
+        std::string writer;
+        std::string ISBN;
         std::string content;
 };
 
 class func{
     public:
         func();
-    private:
+        void search_book_menu();
         std::vector<book> book_list;
-        
+
     
 };
