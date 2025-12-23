@@ -9,7 +9,7 @@ class userfanc{
         void sub_menu();
         void borrow_book_menu();
         void return_book_menu();
-        void load_my_data(std::string user_name);
+        void show_my_data(std::string user_name);
         void change_my_info();
         //...
     private:
