@@ -1,9 +1,9 @@
+#pragma once
 #include "bookfunc.h"
 #include <filesystem>
 #include <fstream>
-#include <chrono>
-#include <thread>
-#define testing 
+#include "menufunc.h"
+
 namespace fs=std::filesystem;
 
 void book::output_menu(){
@@ -24,10 +24,7 @@ void book::output_menu(){
             return;
         }
         else{
-            std::cerr << "错误输入！\n";
-		    std::cin.clear();
-		    std::cin.sync();
-		    std::this_thread::sleep_for(std::chrono::milliseconds(233));
+            menus::error_menu();
         }
     }
 }
@@ -42,7 +39,7 @@ func::func(){
         std::ifstream file(entry.path());
         if (file.is_open()) {
             book tmp;
-            file >> tmp.book_name >> tmp.writer >> tmp.ISBN ;
+            file >> tmp.book_name >> tmp.writer >> tmp.ISBN >> tmp.data >> tmp.borrowed;
             std::getline(file,tmp.content,'\0');
             book_list.push_back(tmp);
             byname[tmp.book_name]=bywriter[tmp.writer]=byISBN[tmp.ISBN]=++id;
@@ -52,11 +49,7 @@ func::func(){
 }
 
 void func::search_book_menu(){
-    #ifdef testing 
-    system("clear");
-    #else 
-    system("cls");
-    #endif
+    menus::clear();
     int op=0;
     while(1){
         puts("请用数字来操作");
@@ -71,20 +64,13 @@ void func::search_book_menu(){
             case 3:{search_ISBN_menu();break;}
             case 4:{return;}
             default :{
-                std::cerr << "错误输入！\n";
-			    std::cin.clear();
-			    std::cin.sync();
-			    std::this_thread::sleep_for(std::chrono::milliseconds(233));//为了能在两边都能跑也是没谁了（
+                menus::error_menu();
             }
         }
     }
 }
 void func::search_name_menu(){
-    #ifdef testing 
-    system("clear");
-    #else 
-    system("cls");
-    #endif
+    menus::clear();
     std::string name; 
     int tmpid;
     while(1){
@@ -95,10 +81,7 @@ void func::search_name_menu(){
         }
         tmpid=byname[name];
         if(!tmpid){
-            std::cerr << "错误输入！\n";
-			std::cin.clear();
-			std::cin.sync();
-			std::this_thread::sleep_for(std::chrono::milliseconds(233));
+            menus::error_menu();
             continue;
         }
         puts("查询结果为:");
@@ -106,25 +89,18 @@ void func::search_name_menu(){
     }
 }
 void func::search_writer_menu(){
-    #ifdef testing 
-    system("clear");
-    #else 
-    system("cls");
-    #endif
-    puts("请输入书名进行查询，按‘e’退出");
+    menus::clear();
     std::string name; 
     int tmpid;
     while(1){
+        puts("请输入作者进行查询，按‘e’返回");
         std::cin>>name;
         if(name=="e"){
             return;
         }
-        tmpid=byname[name];
+        tmpid=bywriter[name];
         if(!tmpid){
-            std::cerr << "错误输入！\n";
-			std::cin.clear();
-			std::cin.sync();
-			std::this_thread::sleep_for(std::chrono::milliseconds(233));
+            menus::error_menu();
             continue;
         }
         puts("查询结果为:");
@@ -133,29 +109,74 @@ void func::search_writer_menu(){
 
 }
 void func::search_ISBN_menu(){
-    #ifdef testing 
-    system("clear");
-    #else 
-    system("cls");
-    #endif
-    puts("请输入书名进行查询，按‘e’退出");
+    menus::clear();
     std::string name; 
     int tmpid;
     while(1){
+        puts("请输入ISBN/ISSN进行查询，按‘e’返回");
         std::cin>>name;
         if(name=="e"){
             return;
         }
-        tmpid=byname[name];
+        tmpid=byISBN[name];
         if(!tmpid){
-            std::cerr << "错误输入！\n";
-			std::cin.clear();
-			std::cin.sync();
-			std::this_thread::sleep_for(std::chrono::milliseconds(233));
+            menus::error_menu();
             continue;
         }
         puts("查询结果为:");
         book_list[tmpid-1].output_menu();
     }
 
+}
+
+void func::manage_book(){
+    menus::clear();
+    int op=0;
+    while(1){
+        puts("请用数字来操作");
+        puts("1.搜索书籍");
+        
+        // puts("2.用作者查询");
+        // puts("3.用ISBN/ISSN查询");
+        // puts("4.返回");
+        std::cin>>op;
+        switch(op){
+             case 1:{search_name_menu();break;}
+            // case 2:{search_writer_menu();break;}
+            // case 3:{search_ISBN_menu();break;}
+            // case 4:{return;}
+            default :{
+                menus::error_menu();
+            }
+        }
+    }
+}
+void func::look_book(){
+    int n=book_list.size(),now=0;
+    char op;
+    menus::clear();
+    while(1){
+        std::cout<<std::left<<std::setw(15)<<"书名"<<
+        std::left<<std::setw(15)<<"作者"<<
+        std::left<<std::setw(15)<<"ISBN"<<
+        std::left<<std::setw(15)<<"借阅情况";
+        while(1){
+            for(int i=0;i<=9;i++){
+                std::cout<<std::left<<std::setw(15)<<book_list[now+i].book_name<<
+                std::left<<std::setw(15)<<book_list[now+i].writer<<
+                std::left<<std::setw(15)<<book_list[now+i].ISBN<<
+                std::left<<std::setw(15)<<((book_list[now+i].borrowed)?"已借阅":"未借阅");    
+            }
+            puts("输入0-9来查看详情");
+            std::cin>>op;
+            if(isdigit(op)){
+                menus::clear();
+                book_list[now+(op-'0')].output_menu();
+            }
+            else{
+                menus::error_menu();
+            }
+        }
+        
+    }
 }
