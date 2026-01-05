@@ -6,14 +6,17 @@ namespace menus{
         std::cerr << "错误输入！\n";
 		std::cin.clear();
 		std::cin.sync();
-		std::this_thread::sleep_for(std::chrono::milliseconds(233));//为了能在两边都能跑也是没谁了（
+		std::this_thread::sleep_for(std::chrono::milliseconds(1233));//为了能在两边都能跑也是没谁了（
     }
     void clear(){
+    std::cin.clear();
+    std::cin.sync();
+	std::this_thread::sleep_for(std::chrono::milliseconds(1233));    
     #ifdef testing 
     system("clear");
     #else 
     system("cls");
     #endif
-}
+    }
 };
 

@@ -1,14 +1,15 @@
 #include "bookfunc.h"
-#include <filesystem>
-#include <fstream>
 #include "menufunc.h"
+
 namespace fs=std::filesystem;
 
 void book::output_menu(){
     std::cout << "书名: " << book_name << std::endl;
     std::cout << "作者: " << writer << std::endl;
     std::cout << "ISBN: " << ISBN << std::endl;
+    std::cout << "日期: " << data << std::endl;
     std::cout << "借阅情况: " << ((borrowed)?"已借阅":"未借阅") << std::endl;
+    std::cout << "借阅人: " << master << std::endl;
     char op;
     while(1){
         puts("是/否查看内容,请输入y/n");
@@ -28,7 +29,7 @@ void book::output_menu(){
     }
 }
 
-void book::change(){
+void book::change(){//borrow没改完
     while(1){
          menus::clear();
     puts("请输入数字来操作");
@@ -71,19 +72,30 @@ void book::change(){
         case 4:{
             menus::clear();
             std::cout<<"原借阅情况："<<((borrowed)?"已借阅":"未借阅")<<std::endl;
-            puts("按任意键更改");
             std::string tmp;
-            std::cin>>tmp;
-            borrowed^=1;
-            puts("更改成功");break;
+            if(!borrowed){
+                std::cout<<"原借阅人："<<master<<std::endl;
+                puts("请输入更改后的借阅人");
+                std::cin>>tmp;
+                master=tmp;
+                /*等待施工*/
+            }
+            else{
+                puts("输入任意键继续");
+                std::cin>>tmp;
+            }
+            
+            break;
         }
         case 5:{
             menus::clear();
             std::cout<<"原内容："<<content<<std::endl;
-            puts("请输入更改后内容");
-            std::string tmp;
-            std::getline(std::cin,tmp,'\0');
-            content=tmp;
+            puts("请输入更改后内容,输入单个字符串“end”结束");
+            std::string tmp,res;
+            std::getline(std::cin,tmp,'\n');
+            res=tmp;
+            while(tmp!="end"){std::getline(std::cin,tmp,'\n');res+=tmp+'\n';}
+            content=res;
             puts("更改成功");break;
         }
         case 6:{
@@ -93,10 +105,18 @@ void book::change(){
             menus::error_menu();break;
         }
     }
+        std::ofstream out(entry);
+        if (!out.is_open()) {
+        std::cerr << "无法打开文件: " << entry << std::endl;
+        return;
+        }
+        out << book_name <<' '<< writer <<' '<<  ISBN <<' '<< data <<' '<< borrowed <<' '<< master <<' '<<content;
+        out.close();
     }
 }
 
-func::func(){
+void func::reload(){
+    byname.clear();bywriter.clear();byISBN.clear();book_list.clear();
     fs::path p="./books";
         if (!exists(p)) {
             create_directory(p);
@@ -105,8 +125,8 @@ func::func(){
     for (const auto& entry : fs::directory_iterator(p)) {
         std::ifstream file(entry.path());
         if (file.is_open()) {
-            book tmp;
-            file >> tmp.book_name >> tmp.writer >> tmp.ISBN >> tmp.data >> tmp.borrowed;
+            book tmp;tmp.entry=entry.path();
+            file >> tmp.book_name >> tmp.writer >> tmp.ISBN >> tmp.data >> tmp.borrowed >> tmp.master;
             std::getline(file,tmp.content,'\0');
             book_list.push_back(tmp);
             byname[tmp.book_name]=bywriter[tmp.writer]=byISBN[tmp.ISBN]=++id;
@@ -115,11 +135,22 @@ func::func(){
     }
 }
 
+func::func(){
+    reload();
+}
+
 void func::search_book_menu(int mod){
+    /*
+    0: admin
+    1: change
+    2: remove
+    3: users/borrow
+    */
     menus::clear();
     int op=0;
     while(1){
         if(mod==1)puts("请先找到需要更改的书");
+        if(mod==2)puts("请先找到需要删除的书");
         puts("请用数字来操作");
         puts("1.用书名查询");
         puts("2.用作者查询");
@@ -155,6 +186,10 @@ void func::search_name_menu(int mod){
         if(mod==1){
             book_list[tmpid-1].change();
         }
+        else if(mod==2){
+            std::remove(book_list[tmpid-1].entry.c_str());
+            reload();
+        }
         else{
             puts("查询结果为:");
             book_list[tmpid-1].output_menu();
@@ -178,6 +213,10 @@ void func::search_writer_menu(int mod){
         }
         if(mod==1){
             book_list[tmpid-1].change();
+        }
+        else if(mod==2){
+            std::remove(book_list[tmpid-1].entry.c_str());
+            reload();
         }
         else{
             puts("查询结果为:");
@@ -204,6 +243,10 @@ void func::search_ISBN_menu(int mod){
         if(mod==1){
             book_list[tmpid-1].change();
         }
+        else if(mod==2){
+            std::remove(book_list[tmpid-1].entry.c_str());
+            reload();
+        }
         else{
             puts("查询结果为:");
             book_list[tmpid-1].output_menu();
@@ -219,15 +262,16 @@ void func::manage_book(){
         puts("请用数字来操作");
         puts("1.搜索书籍");
         puts("2.更改已有书籍");
-        // puts("2.用作者查询");
-        // puts("3.用ISBN/ISSN查询");
-        // puts("4.返回");
+        puts("3.增加书籍");
+        puts("4.用ISBN/ISSN查询");
+        puts("5.返回");
         std::cin>>op;
         switch(op){
             case 1:{search_book_menu();break;}
             case 2:{search_book_menu(1);break;}
-            // case 3:{search_ISBN_menu();break;}
-            // case 4:{return;}
+            case 3:{add_book_menu();break;}
+            case 4:{search_book_menu(2);break;}
+            case 5:{menus::clear();return;}
             default :{
                 menus::error_menu();
             }
@@ -298,7 +342,7 @@ void func::look_book(){
                     now-=10;
                 }
                 else if(op=='e'){
-                    return;
+                    menus::clear();return;
                 }
                 else if(op=='f'&&f2){
                     now+=10;
@@ -307,6 +351,55 @@ void func::look_book(){
                 menus::error_menu();
                 }
             }
-        
+        menus::clear();
     }
 }
+
+void func::add_book_menu(){
+    menus::clear();
+    puts("请输入书名");
+    book tmp;
+    while(1){
+        std::cin>>tmp.book_name;
+        if(byname[tmp.book_name]){
+        puts("已存在此书名，请重新输入");
+        }
+        else break;
+    }
+    puts("请输入作者");
+    while(1){
+        std::cin>>tmp.writer;
+        if(bywriter[tmp.writer]){
+        puts("已存在此作者，请重新输入");
+        }
+        else break;
+    }
+    puts("请输入ISBN/ISSN");
+    while(1){
+        std::cin>>tmp.ISBN;
+        if(byISBN[tmp.ISBN]){
+        puts("已存在此ISBN/ISSN，请重新输入");
+        }
+        else break;
+    }
+    puts("请输入日期,如20070101");
+    std::cin>>tmp.data;
+    tmp.borrowed=0;
+    tmp.master="无";
+    puts("请输入内容");
+    std::cin>>tmp.content;
+    tmp.entry="./books/"+tmp.book_name;
+    std::ofstream out(tmp.entry);
+        if (!out.is_open()) {
+        std::cerr << "无法打开文件: " << tmp.entry << std::endl;
+        return;
+        }
+        out << tmp.book_name <<' '<< tmp.writer <<' '<<  tmp.ISBN <<' '<< tmp.data <<' '<< tmp.borrowed <<' '<< tmp.content;
+        out.close();
+        int id=book_list.size();
+        book_list.push_back(tmp);
+        byname[tmp.book_name]=bywriter[tmp.writer]=byISBN[tmp.ISBN]=id;
+        puts("添加成功");
+        menus::clear();
+}
+

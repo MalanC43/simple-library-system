@@ -3,6 +3,8 @@
 #include <string.h>
 #include <vector>
 #include <map>
+#include <filesystem>
+#include <fstream>
 
 class book{
     public:
@@ -11,6 +13,8 @@ class book{
         std::string ISBN;
         std::string content;
         std::string data;
+        std::string entry;
+        std::string master;
         bool borrowed;
         void output_menu();
         void change();
@@ -25,7 +29,8 @@ class func{
         void search_ISBN_menu(int mod=0);
         void manage_book();
         void look_book();
-        void change_book_menu();
+        void add_book_menu();
+        void reload();
 
         std::vector<book> book_list;
         std::map<std::string,int> byname;
