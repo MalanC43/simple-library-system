@@ -4,6 +4,6 @@
 
 int main(){
     func test;
-    test.search_book_menu();
+    test.manage_book();
     return 0;
 }

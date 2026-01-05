@@ -1,4 +1,3 @@
-#pragma once
 #include "menufunc.h"
 #define testing
 
