@@ -286,18 +286,18 @@ void func::look_book(std::vector<book> books){
     char op;
     menus::clear();
     while(1){
-        std::cout<<std::left<<std::setw(15)<<"代号"<<
-        std::left<<std::setw(15)<<"书名"<<
-        std::left<<std::setw(15)<<"作者"<<
-        std::left<<std::setw(15)<<"ISBN"<<
-        std::left<<std::setw(15)<<"借阅情况"<<std::endl;
+        std::cout<<std::left<<std::setw(25)<<"代号"<<
+        std::left<<std::setw(25)<<"书名"<<
+        std::left<<std::setw(25)<<"作者"<<
+        std::left<<std::setw(25)<<"ISBN"<<
+        std::left<<std::setw(25)<<"借阅情况"<<std::endl;
             if(now+9>=n){
                 for(int i=now;i<n;i++){
-                    std::cout<<std::left<<std::setw(15)<<i-now<<
-                    std::left<<std::setw(15)<<books[i].book_name<<
-                    std::left<<std::setw(15)<<books[i].writer<<
-                    std::left<<std::setw(15)<<books[i].ISBN<<
-                    std::left<<std::setw(15)<<((books[i].borrowed)?"已借阅":"未借阅")<<std::endl;
+                    std::cout<<std::left<<std::setw(25)<<i-now<<
+                    std::left<<std::setw(25)<<books[i].book_name<<
+                    std::left<<std::setw(25)<<books[i].writer<<
+                    std::left<<std::setw(25)<<books[i].ISBN<<
+                    std::left<<std::setw(25)<<((books[i].borrowed)?"已借阅":"未借阅")<<std::endl;
                 }
                 puts("输入代号来查看详情,按e提出");
                 bool f1=0;
@@ -321,11 +321,11 @@ void func::look_book(std::vector<book> books){
             }
             else{
                 for(int i=0;i<=9;i++){
-                    std::cout<<std::left<<std::setw(15)<<i<<
-                    std::left<<std::setw(15)<<books[now+i].book_name<<
-                    std::left<<std::setw(15)<<books[now+i].writer<<
-                    std::left<<std::setw(15)<<books[now+i].ISBN<<
-                    std::left<<std::setw(15)<<((books[now+i].borrowed)?"已借阅":"未借阅")<<std::endl;    
+                    std::cout<<std::left<<std::setw(25)<<i<<
+                    std::left<<std::setw(25)<<books[now+i].book_name<<
+                    std::left<<std::setw(25)<<books[now+i].writer<<
+                    std::left<<std::setw(25)<<books[now+i].ISBN<<
+                    std::left<<std::setw(25)<<((books[now+i].borrowed)?"已借阅":"未借阅")<<std::endl;    
                 }
                 puts("输入代号来查看详情,按e提出");
                 bool f1=0,f2=0;

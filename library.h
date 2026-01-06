@@ -1,9 +1,9 @@
 #pragma once
 #include <iostream>
 #include <vector>
-#include "user_data.h"
 #include "admin.h"
 #include "bookfunc.h"
+#include "user_fanc.h"
 
 class library{
     public:
@@ -13,6 +13,6 @@ class library{
         void Register();
         //...
     private:
-       
+        user_info usernow;
         func book;
 };
