@@ -1,5 +1,5 @@
 #include "bookfunc.h"
-#include "menufunc.h"
+#include <limits>
 
 namespace fs=std::filesystem;
 
@@ -17,7 +17,7 @@ void book::output_menu(){
         if(op=='y'){
             std::cout<<content<<std::endl;
             std::cin.clear();
-		    std::cin.sync();
+		    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		    std::this_thread::sleep_for(std::chrono::milliseconds(233));
         }
         else if(op=='n'){
@@ -31,7 +31,7 @@ void book::output_menu(){
 
 void book::change(){//borrow没改完
     while(1){
-         menus::clear();
+    menus::clear();
     puts("请输入数字来操作");
     puts("1，更改书名");
     puts("2，更改作者");
@@ -93,8 +93,7 @@ void book::change(){//borrow没改完
             puts("请输入更改后内容,输入单个字符串“end”结束");
             std::string tmp,res;
             std::getline(std::cin,tmp,'\n');
-            res=tmp;
-            while(tmp!="end"){std::getline(std::cin,tmp,'\n');res+=tmp+'\n';}
+            while(tmp!="end"){res+=tmp+'\n';std::getline(std::cin,tmp,'\n');}
             content=res;
             puts("更改成功");break;
         }
@@ -102,7 +101,8 @@ void book::change(){//borrow没改完
             return;
         }
         default:{
-            menus::error_menu();break;
+            menus::error_menu();
+            break;
         }
     }
         std::ofstream out(entry);
@@ -146,9 +146,9 @@ void func::search_book_menu(int mod){
     2: remove
     3: users/borrow
     */
-    menus::clear();
     int op=0;
     while(1){
+        menus::clear();
         if(mod==1)puts("请先找到需要更改的书");
         if(mod==2)puts("请先找到需要删除的书");
         puts("请用数字来操作");
@@ -169,10 +169,10 @@ void func::search_book_menu(int mod){
     }
 }
 void func::search_name_menu(int mod){
-    menus::clear();
     std::string name; 
     int tmpid;
     while(1){
+        menus::clear();
         puts("请输入书名进行查询，按‘e’返回");
         std::cin>>name;
         if(name=="e"){
@@ -197,10 +197,10 @@ void func::search_name_menu(int mod){
     }
 }
 void func::search_writer_menu(int mod){
-    menus::clear();
     std::string name; 
     int tmpid;
     while(1){
+        menus::clear();
         puts("请输入作者进行查询，按‘e’返回");
         std::cin>>name;
         if(name=="e"){
@@ -226,10 +226,11 @@ void func::search_writer_menu(int mod){
 
 }
 void func::search_ISBN_menu(int mod){
-    menus::clear();
+    
     std::string name; 
     int tmpid;
     while(1){
+        menus::clear();
         puts("请输入ISBN/ISSN进行查询，按‘e’返回");
         std::cin>>name;
         if(name=="e"){
@@ -256,30 +257,32 @@ void func::search_ISBN_menu(int mod){
 }
 
 void func::manage_book(){
-    menus::clear();
     int op=0;
     while(1){
+        menus::clear();
         puts("请用数字来操作");
         puts("1.搜索书籍");
         puts("2.更改已有书籍");
         puts("3.增加书籍");
-        puts("4.用ISBN/ISSN查询");
-        puts("5.返回");
+        puts("4.删除书籍");
+        puts("5.浏览书籍");
+        puts("6.返回");
         std::cin>>op;
         switch(op){
             case 1:{search_book_menu();break;}
             case 2:{search_book_menu(1);break;}
             case 3:{add_book_menu();break;}
             case 4:{search_book_menu(2);break;}
-            case 5:{menus::clear();return;}
+            case 5:{look_book(book_list);break;}
+            case 6:{return;}
             default :{
                 menus::error_menu();
             }
         }
     }
 }
-void func::look_book(){
-    int n=(int)book_list.size(),now=0;
+void func::look_book(std::vector<book> books){
+    int n=(int)books.size(),now=0;
     char op;
     menus::clear();
     while(1){
@@ -291,10 +294,10 @@ void func::look_book(){
             if(now+9>=n){
                 for(int i=now;i<n;i++){
                     std::cout<<std::left<<std::setw(15)<<i-now<<
-                    std::left<<std::setw(15)<<book_list[i].book_name<<
-                    std::left<<std::setw(15)<<book_list[i].writer<<
-                    std::left<<std::setw(15)<<book_list[i].ISBN<<
-                    std::left<<std::setw(15)<<((book_list[i].borrowed)?"已借阅":"未借阅")<<std::endl;
+                    std::left<<std::setw(15)<<books[i].book_name<<
+                    std::left<<std::setw(15)<<books[i].writer<<
+                    std::left<<std::setw(15)<<books[i].ISBN<<
+                    std::left<<std::setw(15)<<((books[i].borrowed)?"已借阅":"未借阅")<<std::endl;
                 }
                 puts("输入代号来查看详情,按e提出");
                 bool f1=0;
@@ -304,7 +307,7 @@ void func::look_book(){
                 std::cin>>op;
                 if(isdigit(op)){
                     menus::clear();
-                    book_list[now+(op-'0')].output_menu();
+                    books[now+(op-'0')].output_menu();
                 }
                 else if(op=='b'&&f1){
                     now-=10;
@@ -319,10 +322,10 @@ void func::look_book(){
             else{
                 for(int i=0;i<=9;i++){
                     std::cout<<std::left<<std::setw(15)<<i<<
-                    std::left<<std::setw(15)<<book_list[now+i].book_name<<
-                    std::left<<std::setw(15)<<book_list[now+i].writer<<
-                    std::left<<std::setw(15)<<book_list[now+i].ISBN<<
-                    std::left<<std::setw(15)<<((book_list[now+i].borrowed)?"已借阅":"未借阅")<<std::endl;    
+                    std::left<<std::setw(15)<<books[now+i].book_name<<
+                    std::left<<std::setw(15)<<books[now+i].writer<<
+                    std::left<<std::setw(15)<<books[now+i].ISBN<<
+                    std::left<<std::setw(15)<<((books[now+i].borrowed)?"已借阅":"未借阅")<<std::endl;    
                 }
                 puts("输入代号来查看详情,按e提出");
                 bool f1=0,f2=0;
@@ -336,7 +339,7 @@ void func::look_book(){
                 std::cin>>op;
                 if(isdigit(op)){
                     menus::clear();
-                    book_list[now+(op-'0')].output_menu();
+                    books[now+(op-'0')].output_menu();
                 }
                 else if(op=='b'&&f1){
                     now-=10;

@@ -1,7 +1,9 @@
 #pragma once
 #include <iostream>
+#include <vector>
 #include "user_data.h"
 #include "admin.h"
+#include "bookfunc.h"
 
 class library{
     public:
@@ -10,4 +12,7 @@ class library{
         void login();
         void Register();
         //...
+    private:
+       
+        func book;
 };

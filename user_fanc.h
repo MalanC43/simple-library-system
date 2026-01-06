@@ -4,14 +4,10 @@
 #include <bookfunc.h>
 #include <user_data.h>
 
-class userfanc{
+class func{
     public:
-        void sub_menu();
-        void borrow_book_menu();
-        void return_book_menu();
-        void show_my_data(std::string user_name);
-        void change_my_info();
+       func();
         //...
     private:
-        user_info my_date;
+        std::vector<user_info> users;
 };

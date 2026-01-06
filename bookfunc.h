@@ -5,6 +5,7 @@
 #include <map>
 #include <filesystem>
 #include <fstream>
+#include "menufunc.h"
 
 class book{
     public:
@@ -28,7 +29,7 @@ class func{
         void search_writer_menu(int mod=0);
         void search_ISBN_menu(int mod=0);
         void manage_book();
-        void look_book();
+        void look_book(std::vector<book> books);
         void add_book_menu();
         void reload();
 
