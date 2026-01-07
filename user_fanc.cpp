@@ -3,20 +3,59 @@
 namespace fs=std::filesystem;
 
 void user_info::output_menu(func &now){
-    std::cout<<"用户名:"<<username<<std::endl
-    <<"身份:"<< ((level=="admin")?"管理员":"用户")<<std::endl
-    <<"借阅书籍数:"<<borrowed_book.size()<<std::endl;
+    std::vector<std::string> info = {
+        "用户名: " + username,
+        "身份: " + std::string((level=="admin")?"管理员":"用户"),
+        "借阅书籍数: " + std::to_string(borrowed_book.size())
+    };
+    draw_box("用户信息", info);
     int op;
     while(1){
-        puts("1.查看借阅详情");
-        puts("2.返回");
+        draw_box("操作",{"1.查看借阅详情","2.更改密码","3.返回"});
         std::cin>>op;
         switch(op){
             case 1:{now.look_book(borrowed_book);break;}
-            case 2:{menus::clear();return;break;}
+            case 2:{change_password();break;}
+            case 3:{menus::clear();return;break;}
             default :{
                 menus::error_menu();
             }
+        }
+    }
+}
+
+void user_info::change_password(){
+    std::string ps1,ps2;
+    size_t p1,p2;
+    while(1){
+        menus::clear();
+        draw_box("输入新密码", {"请输入新密码"});
+        std::cin>>ps1;
+        p1=hash(ps1);
+        draw_box("确认密码", {"请再次输入新密码"});
+        std::cin>>ps2;
+        p2=hash(ps2);
+        if(p1!=p2){
+            draw_box("错误",{"两次输入不一样，输入\"e\"以外字符来继续"});
+            std::cin>>ps1;
+            if(ps1=="e"){
+                return;
+            }
+        }
+        else{
+            password=p1;
+            std::ofstream out(entry);
+            if (!out.is_open()) {
+            std::cerr << "无法打开文件: " << entry << std::endl;
+            return;
+            }
+            out << username <<' '<< password <<' '<<  level <<' '<< book_num <<std::endl;
+            for(int i=0;i<book_num;i++){
+                out<<borrowed_ISBN[i]<<std::endl;
+            }
+            out.close();
+            draw_box("成功",{"更改成功"});
+            return;
         }
     }
 }
@@ -25,10 +64,7 @@ void user_info::change_menu(){
     menus::clear();
     int op;
     while(1){
-        puts("请输入数字来选择");
-        puts("1.更改");
-        puts("2.删除");
-        puts("3.返回");
+        draw_box("更改选项", {"1.更改", "2.删除", "3.返回"});
         std::cin>>op;
         switch(op){
             case 1:{change();break;}
@@ -43,41 +79,35 @@ void user_info::change_menu(){
 
 void user_info::remove(){
     std::remove(entry.c_str());
-    puts("删除成功");
+    draw_box("成功", {"删除成功"});
 }
 void user_info::change(){
     while(1){
     menus::clear();
-    puts("请输入数字来操作");
-    puts("1，更改用户名");
-    puts("2，重置密码为123456");
-    puts("3，更改身份");
-    puts("4，退出");
+    draw_box("更改用户信息", {"1.更改用户名", "2.重置密码为123456", "3.更改身份", "4.退出"});
     int op;
     std::cin>>op;
     switch(op){
         case 1:{
             menus::clear();
-            std::cout<<"原用户名："<<username<<std::endl;
-            puts("请输入更改后用户名");
+            draw_box("原用户名", {username});
+            draw_box("输入", {"请输入更改后用户名"});
             std::string tmp;
             std::cin>>tmp;
             username=tmp;
-            puts("更改成功");break;
+            draw_box("成功", {"更改成功"});break;
         }
         case 2:{
             menus::clear();
             password=10676640704186402002;
-            puts("更改成功");break;
+            draw_box("成功", {"更改成功"});break;
         }
         case 3:{
             menus::clear();
-            std::cout<<"原身份："<<level<<std::endl;
-            puts("请输入更改后身份");
+            draw_box("原身份", {level});
+            draw_box("选择身份", {"1.管理员", "2.用户"});
             bool f=1;
             while(f){
-                puts("1.管理员");
-                puts("2.用户");
                 std::cin>>op;
                 switch(op){
                     case 1:{f=0;level="admin";break;}
@@ -88,7 +118,7 @@ void user_info::change(){
                     }
                 }
             }
-            puts("更改成功");break;
+            draw_box("成功", {"更改成功"});break;
         }
         case 4:{
             return;
@@ -134,7 +164,7 @@ void fanc::reload(func &now){
                    file>>str;
                    tmp.borrowed_ISBN.push_back(str);
                    int idx = now.byISBN[str];
-                   if(idx) tmp.borrowed_book.push_back(now.book_list[idx-1]);
+                   if(idx > 0 && idx <= (int)now.book_list.size()) tmp.borrowed_book.push_back(now.book_list[idx-1]);
                 }
                 users.push_back(tmp);
             }
@@ -146,36 +176,30 @@ void fanc::reload(func &now){
 std::pair<bool,user_info*> fanc::cheak(std::string username,std::string password){
     user_info tmp;
     int id=mp[username];
-    if(!id)return std::make_pair(0,&tmp);
+    if(!id)return std::make_pair(false, nullptr);
     size_t a=hash(password);
     //std::cout<<id-1<<std::endl;
     tmp=users[id-1];
     //puts("Tsd");
-    if(a!=users[id-1].password)return std::make_pair(0,&tmp);
-    else return std::make_pair(1,&users[id-1]);
+    if(a!=users[id-1].password)return std::make_pair(false, nullptr);
+    else return std::make_pair(true, &users[id-1]);
 }
 
 void fanc::look_user_menu(){
     int n=(int)users.size(),now=0;
     char op;
-    menus::clear();
     while(1){
-        std::cout<<std::left<<std::setw(20)<<"代号"<<
-        std::left<<std::setw(20)<<"用户名"<<
-        std::left<<std::setw(20)<<"身份"<<
-        std::left<<std::setw(20)<<"借阅书籍数"<<std::endl;
+        menus::clear();
+        draw_box("用户列表", {"代号 | 用户名 | 身份 | 借阅书籍数"});
+        std::cout << std::string(50, '-') << std::endl;
             if(now+9>=n){
                 for(int i=now;i<n;i++){
-                    std::cout<<std::left<<std::setw(20)<<i-now<<
-                    std::left<<std::setw(20)<<users[i].username<<
-                    std::left<<std::setw(20)<<((users[i].level=="admin")?"管理员":"用户")<<
-                    std::left<<std::setw(20)<<users[i].borrowed_book.size()<<std::endl;
+                    std::cout << std::left << std::setw(5) << (i-now) << " | "
+                              << std::left << std::setw(15) << users[i].username << " | "
+                              << std::left << std::setw(10) << ((users[i].level=="admin")?"管理员":"用户") << " | "
+                              << users[i].borrowed_book.size() << std::endl;
                 }
-                puts("输入代号来查看详情,按e提出");
-                bool f1=0;
-                if(now){
-                    printf("上一页按b ");f1=1;
-                }
+                draw_box("操作", {"输入代号查看详情", "按e退出", (now ? "按b上一页" : "")});
                 std::cin>>op;
                 if(isdigit(op)){
                     int idx = now + (op - '0');
@@ -186,7 +210,7 @@ void fanc::look_user_menu(){
                         menus::error_menu();
                     }
                 }
-                else if(op=='b'&&f1){
+                else if(op=='b'&&now>0){
                     now-=10;
                 }
                 else if(op=='e'){
@@ -197,21 +221,13 @@ void fanc::look_user_menu(){
                 }
             }
             else{
-                for(int i=0;i<=9;i++){
-                    std::cout<<std::left<<std::setw(20)<<i-now<<
-                    std::left<<std::setw(20)<<users[i].username<<
-                    std::left<<std::setw(20)<<((users[i].level=="admin")?"管理员":"用户")<<
-                    std::left<<std::setw(20)<<users[i].borrowed_book.size()<<std::endl;    
+                for(int i=now;i<now+9;i++){
+                    std::cout << std::left << std::setw(5) << (i-now) << " | "
+                              << std::left << std::setw(15) << users[i].username << " | "
+                              << std::left << std::setw(10) << ((users[i].level=="admin")?"管理员":"用户") << " | "
+                              << users[i].borrowed_book.size() << std::endl;
                 }
-                puts("输入代号来查看详情,按e提出");
-                bool f1=0,f2=0;
-                if(now){
-                    printf("上一页按b ");f1=1;
-                }
-                if(now+9!=n-1){
-                    printf("下一页按f ");f2=1;
-                }
-                puts("");
+                draw_box("操作", {"输入代号查看详情", "按e退出", "按b上一页", "按n下一页"});
                 std::cin>>op;
                 if(isdigit(op)){
                     int idx = now + (op - '0');
@@ -222,13 +238,13 @@ void fanc::look_user_menu(){
                         menus::error_menu();
                     }
                 }
-                else if(op=='b'&&f1){
+                else if(op=='b'&&now>0){
                     now-=10;
                 }
                 else if(op=='e'){
-                    menus::clear();return;
+                    return;
                 }
-                else if(op=='f'&&f2){
+                else if(op=='n'&&now+9<n){
                     now+=10;
                 }
                 else{
@@ -248,9 +264,7 @@ void fanc::add_user(int mod){
     user_info tmp;
     int op;bool f=1;
     while(f&&mod){
-        puts("请输入数字来选择");
-        puts("1.管理员");
-        puts("2.用户");
+        draw_box("选择身份", {"1.管理员", "2.用户"});
         std::cin>>op;
         switch(op){
             case 1:{f=0;tmp.level="admin";break;}
@@ -261,14 +275,14 @@ void fanc::add_user(int mod){
         }
     }
     while(1){
-        puts("请输入用户名");
+        draw_box("输入用户名", {"请输入用户名"});
         std::cin>>tmp.username;
         if(mp[tmp.username]){
-            puts("已存在此用户，请重新输入");
+            draw_box("错误", {"已存在此用户，请重新输入"});
         }
         else break;
     }
-    puts("请输入密码");
+    draw_box("输入密码", {"请输入密码"});
     std::string password;
     std::cin>>password;
     tmp.password=hash(password);
@@ -283,7 +297,7 @@ void fanc::add_user(int mod){
         out.close();
         users.push_back(tmp);
         mp[tmp.username] = users.size();
-        puts("添加成功");
+        draw_box("成功", {"添加成功"});
         menus::clear();
 }
 
@@ -291,13 +305,13 @@ void fanc::search_user(int mod){
     std::string s;
     while(1){
         menus::clear();
-        if(mod==1)puts("请先查找需要更改或删除的用户");
-        puts("请输入用户名查找");
-        puts("请输入“exit”退出");
+        if(mod==1) draw_box("提示", {"请先查找需要更改或删除的用户"});
+        draw_box("搜索用户", {"请输入用户名查找", "请输入\"exit\"退出"});
         std::cin>>s;
         if(s=="exit")return;
         if(!mp[s]){
-            puts("未找到该用户");continue;
+            draw_box("错误", {"未找到该用户"});
+            continue;
         }
         if(mod==1){
             users[mp[s]-1].change_menu();
@@ -311,12 +325,7 @@ void fanc::manage_user(){
     int op=0;
     while(1){
         menus::clear();
-        puts("请用数字来操作");
-        puts("1.搜索用户");
-        puts("2.更改或删除用户");
-        puts("3.增加用户");
-        puts("4.浏览用户");
-        puts("5.返回");
+        draw_box("用户管理", {"1.搜索用户", "2.更改或删除用户", "3.增加用户", "4.浏览用户", "5.返回"});
         std::cin>>op;
         switch(op){
             case 1:{search_user();break;}
