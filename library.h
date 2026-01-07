@@ -1,18 +1,18 @@
 #pragma once
 #include <iostream>
 #include <vector>
-#include "admin.h"
 #include "bookfunc.h"
 #include "user_fanc.h"
 
 class library{
     public:
+        library() : user(books) {}  // 添加构造函数，初始化 user
         void menu();
-        void exitS();
         void login();
-        void Register();
+        void admin_menu();
+        void user_menu();
         //...
-    private:
-        user_info usernow;
-        func book;
+        user_info *usernow;
+        func books;
+        fanc user;
 };

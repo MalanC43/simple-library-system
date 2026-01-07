@@ -2,7 +2,7 @@
 
 一个简单的管理系统，大概会有以下功能
 
-（施工进度：1%）
+（施工进度：90%）
 
 ### upd 20251222
 结果一个人揽下了写代码的活，今天偷懒一点，只大概写个开头，希望明天能多写点
@@ -14,28 +14,5 @@
 希望能写完吧
 祝自己生日快乐一下
 
----
-<ul>
-<li>menu //菜单 实现调用各个功能
-<li>reader_menu //调用读者功能
-<li>admin_menu //调用admin功能
-<li>board //排行榜
-</ul>
-
-### menu
-<ul>
-<li>login //菜单 选择功能
-</ul>
-
-#### reader_menu
-<ul>
-<li>search //查找
-<li>return_book //还
-<li>borrow_book //借
-</ul>
-
-#### admin_menu
-<ul>
-<li>manage_user //管理用户
-<li>manage_book //管理书
-</ul>
+### upd 20260107
+初版完工，看看后面能不能改进一下。

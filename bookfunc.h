@@ -6,24 +6,15 @@
 #include <filesystem>
 #include <fstream>
 #include "menufunc.h"
-
-class book{
-    public:
-        std::string book_name;
-        std::string writer;
-        std::string ISBN;
-        std::string content;
-        std::string data;
-        std::string entry;
-        std::string master;
-        bool borrowed;
-        void output_menu();
-        void change();
-};
+#include "book.h"
+#include "user_data.h"
 
 class func{
     public:
         func();
+        func& operator=(const func& /*other*/) {
+        return *this;
+        }
         void search_book_menu(int mod=0);
         void search_name_menu(int mod=0);
         void search_writer_menu(int mod=0);
@@ -36,5 +27,6 @@ class func{
         std::vector<book> book_list;
         std::map<std::string,int> byname;
         std::map<std::string,int> bywriter;
-        std::map<std::string,int> byISBN; 
+        std::map<std::string,int> byISBN;
+        user_info *mine;  
 };

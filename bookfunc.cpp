@@ -3,7 +3,7 @@
 
 namespace fs=std::filesystem;
 
-void book::output_menu(){
+void book::output_menu(func &now){
     std::cout << "书名: " << book_name << std::endl;
     std::cout << "作者: " << writer << std::endl;
     std::cout << "ISBN: " << ISBN << std::endl;
@@ -12,16 +12,77 @@ void book::output_menu(){
     std::cout << "借阅人: " << master << std::endl;
     char op;
     while(1){
-        puts("是/否查看内容,请输入y/n");
+        menus::clear();
+        puts("请输入字符来操作");
+        puts("1.查看内容");
+        if(!borrowed)puts("2.借阅");
+        if(master==now.mine->username)puts("3.归还");
+        puts("e.退出");
         std::cin>>op;
-        if(op=='y'){
+        if(op=='1'){
             std::cout<<content<<std::endl;
             std::cin.clear();
 		    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		    std::this_thread::sleep_for(std::chrono::milliseconds(233));
         }
-        else if(op=='n'){
+        else if(op=='e'){
             return;
+        }
+        else if(op=='3'&&master==now.mine->username){
+            borrowed=0;master="无";
+            std::ofstream out(entry);
+            if (!out.is_open()) {
+            std::cerr << "无法打开文件: " << entry << std::endl;
+            return;
+            }
+            out << book_name <<' '<< writer <<' '<<  ISBN <<' '<< data <<' '<< borrowed <<' '<< master <<' '<<content;
+            out.close();
+            for(auto i=now.mine->borrowed_ISBN.begin();i!=now.mine->borrowed_ISBN.end();i++){
+                if(*i==ISBN){
+                    now.mine->borrowed_ISBN.erase(i);break;
+                }
+            }
+            for(auto i=now.mine->borrowed_book.begin();i!=now.mine->borrowed_book.end();i++){
+                if(i->ISBN==ISBN){
+                    now.mine->borrowed_book.erase(i);break;
+                }
+            }
+            now.mine->book_num--;
+            std::ofstream tout(now.mine->entry);
+            if (!tout.is_open()) {
+            std::cerr << "无法打开文件: " << now.mine->entry << std::endl;
+            return;
+            }
+            tout << now.mine->username <<' '<< now.mine->password <<' '<<  now.mine->level <<' '<<now.mine->book_num<<std::endl;
+            for(std::string s:now.mine->borrowed_ISBN){
+                tout<< s << std::endl;
+            }
+            tout.close();
+            puts("归还成功");
+        }
+        else if(op=='2'&&!borrowed){
+            borrowed=1;master=now.mine->username;
+            std::ofstream out(entry);
+            if (!out.is_open()) {
+            std::cerr << "无法打开文件: " << entry << std::endl;
+            return;
+            }
+            out << book_name <<' '<< writer <<' '<<  ISBN <<' '<< data <<' '<< borrowed <<' '<< master <<' '<<content;
+            out.close();
+            now.mine->borrowed_ISBN.push_back(ISBN);
+            now.mine->book_num++;
+            now.mine->borrowed_book.push_back(*this);
+            std::ofstream tout(now.mine->entry);
+            if (!tout.is_open()) {
+            std::cerr << "无法打开文件: " << now.mine->entry << std::endl;
+            return;
+            }
+            tout << now.mine->username <<' '<< now.mine->password <<' '<<  now.mine->level <<' '<<now.mine->book_num<<std::endl;
+            for(std::string s:now.mine->borrowed_ISBN){
+                tout<< s << std::endl;
+            }
+            tout.close();
+            puts("借阅成功");
         }
         else{
             menus::error_menu();
@@ -29,7 +90,7 @@ void book::output_menu(){
     }
 }
 
-void book::change(){//borrow没改完
+void book::change(){
     while(1){
     menus::clear();
     puts("请输入数字来操作");
@@ -74,17 +135,13 @@ void book::change(){//borrow没改完
             std::cout<<"原借阅情况："<<((borrowed)?"已借阅":"未借阅")<<std::endl;
             std::string tmp;
             if(!borrowed){
-                std::cout<<"原借阅人："<<master<<std::endl;
-                puts("请输入更改后的借阅人");
-                std::cin>>tmp;
-                master=tmp;
-                /*等待施工*/
+                puts("无法从未借阅修改成已借阅");
             }
             else{
                 puts("输入任意键继续");
                 std::cin>>tmp;
             }
-            
+            borrowed^=1;
             break;
         }
         case 5:{
@@ -192,7 +249,7 @@ void func::search_name_menu(int mod){
         }
         else{
             puts("查询结果为:");
-            book_list[tmpid-1].output_menu();
+            book_list[tmpid-1].output_menu(*this);
         }
     }
 }
@@ -220,7 +277,7 @@ void func::search_writer_menu(int mod){
         }
         else{
             puts("查询结果为:");
-            book_list[tmpid-1].output_menu();
+            book_list[tmpid-1].output_menu(*this);
         }   
     }
 
@@ -250,7 +307,7 @@ void func::search_ISBN_menu(int mod){
         }
         else{
             puts("查询结果为:");
-            book_list[tmpid-1].output_menu();
+            book_list[tmpid-1].output_menu(*this);
         }
     }
 
@@ -307,7 +364,7 @@ void func::look_book(std::vector<book> books){
                 std::cin>>op;
                 if(isdigit(op)){
                     menus::clear();
-                    books[now+(op-'0')].output_menu();
+                    books[now+(op-'0')].output_menu(*this);
                 }
                 else if(op=='b'&&f1){
                     now-=10;
@@ -339,7 +396,7 @@ void func::look_book(std::vector<book> books){
                 std::cin>>op;
                 if(isdigit(op)){
                     menus::clear();
-                    books[now+(op-'0')].output_menu();
+                    books[now+(op-'0')].output_menu(*this);
                 }
                 else if(op=='b'&&f1){
                     now-=10;

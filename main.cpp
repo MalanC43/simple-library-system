@@ -1,9 +1,9 @@
 #define testing
-#include "bookfunc.h"
+#include "library.h"
 #include <iostream>
 
 int main(){
-    func test;
-    test.manage_book();
+    library test;
+    test.menu();
     return 0;
 }
