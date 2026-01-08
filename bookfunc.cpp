@@ -5,6 +5,12 @@
 
 namespace fs=std::filesystem;
 
+inline int read(std::string ch){
+	int x=0,f=0,n=ch.size();
+	while(f<n){x=x*10+(ch[f++]^48);}
+	return x;
+}
+
 static std::string trim(const std::string& s){
     size_t a = s.find_first_not_of(' ');
     size_t b = s.find_last_not_of(' ');
@@ -13,30 +19,32 @@ static std::string trim(const std::string& s){
 }
 
 static std::string serialize_book_line(const book& b){
-    return b.book_name + " | " + b.writer + " | " + b.ISBN + " | " + b.data + " | " + (b.borrowed?"1":"0") + " | " + b.master + " | " + b.content;
+    return b.book_name + " | " + b.writer + " | " + b.ISBN + " | " + b.data + " | " + (b.borrowed?"1":"0") + " | " + b.master + " | " + std::to_string(b.borrowed_num) + " | " + b.content;
 }
 
 static bool deserialize_book_line(const std::string& line, book& out){
     if(line.find('|') != std::string::npos){
         std::vector<size_t> pos;
-        for(size_t i=0;i<line.size() && pos.size()<6;i++){
+        for(size_t i=0;i<line.size() && pos.size()<7;i++){
             if(line[i]=='|') pos.push_back(i);
         }
-        if(pos.size()<6) return false;
+        if(pos.size()<7) return false;
         std::string f1 = trim(line.substr(0, pos[0]));
         std::string f2 = trim(line.substr(pos[0]+1, pos[1]-pos[0]-1));
         std::string f3 = trim(line.substr(pos[1]+1, pos[2]-pos[1]-1));
         std::string f4 = trim(line.substr(pos[2]+1, pos[3]-pos[2]-1));
         std::string f5 = trim(line.substr(pos[3]+1, pos[4]-pos[3]-1));
         std::string f6 = trim(line.substr(pos[4]+1, pos[5]-pos[4]-1));
-        std::string f7 = trim(line.substr(pos[5]+1));
+        std::string f7 = trim(line.substr(pos[5]+1, pos[6]-pos[5]-1));
+        std::string f8 = trim(line.substr(pos[6]+1));
         out.book_name = f1;
         out.writer = f2;
         out.ISBN = f3;
         out.data = f4;
         out.borrowed = (f5=="1"||f5=="true") ? 1 : 0;
         out.master = f6;
-        out.content = f7;
+        out.borrowed_num=read(f7);
+        out.content = f8;
         return true;
     }else{
         std::istringstream iss(line);
@@ -154,6 +162,7 @@ void book::output_menu(func &now){
             }
             out << serialize_book_line(*this);
             out.close();
+            borrowed_num++;
             now.mine->borrowed_ISBN.push_back(ISBN);
             now.mine->book_num++;
             now.mine->borrowed_book.push_back(*this);
@@ -522,6 +531,7 @@ void func::add_book_menu(){
     std::cin>>tmp.data;
     tmp.borrowed=0;
     tmp.master="无";
+    tmp.borrowed_num=0;
     draw_box("输入内容", {"请输入内容,输入单个字符串\"end\"结束"});
     std::string line,res;
     std::cin.ignore();
@@ -546,3 +556,18 @@ void func::add_book_menu(){
         menus::clear();
 }
 
+
+void func::rank(){
+    std::vector<book> tmp;
+    tmp=book_list;
+    //std::cout<<book_list.size()<<std::endl;
+    std::sort(tmp.begin(),tmp.end(), 
+    [this](const book& a, const book& b) {
+        return a.borrowed > b.borrowed;  
+    });
+    if(tmp.size()>10)tmp.erase(tmp.begin()+10,tmp.end());
+    draw_box("成功",{"稍等，将显示借阅排名前十的书籍"});
+    std::this_thread::sleep_for(std::chrono::milliseconds(888));
+    look_book(tmp);
+    reload();
+}

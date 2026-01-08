@@ -19,4 +19,5 @@ class book{
         std::string data;
         std::string entry;
         std::string master;
+        int borrowed_num;
 };

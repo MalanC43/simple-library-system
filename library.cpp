@@ -63,14 +63,15 @@ void library::admin_menu(){
 void library::user_menu(){
     while(1){
         menus::clear();
-        draw_box("用户菜单", {"1.搜索书籍", "2.浏览书籍", "3.查看用户信息", "4.退出"});
+        draw_box("用户菜单", {"1.搜索书籍", "2.浏览书籍", "3.查看借阅榜单", "4.查看用户信息", "5.退出"});
         int op;
         std::cin>>op;
         switch(op){
             case 1:{books.search_book_menu(3);user.reload(books);break;}
             case 2:{books.look_book(books.book_list);break;}
-            case 3:{usernow->output_menu(books);break;}
-            case 4:{return;break;}
+            case 3:{books.rank();break;}
+            case 4:{usernow->output_menu(books);break;}
+            case 5:{return;break;}
             default :{
                 menus::error_menu();
             }

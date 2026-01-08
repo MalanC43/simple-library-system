@@ -23,6 +23,7 @@ class func{
         void look_book(std::vector<book> books);
         void add_book_menu();
         void reload();
+        void rank();
 
         std::hash<std::string> hash;
         std::vector<book> book_list;

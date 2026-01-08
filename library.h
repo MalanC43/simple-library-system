@@ -6,7 +6,7 @@
 
 class library{
     public:
-        library() : user(books) {}  // 添加构造函数，初始化 user
+        library() : user(books) {}  
         void menu();
         void login();
         void admin_menu();
