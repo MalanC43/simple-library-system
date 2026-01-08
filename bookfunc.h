@@ -24,9 +24,10 @@ class func{
         void add_book_menu();
         void reload();
 
+        std::hash<std::string> hash;
         std::vector<book> book_list;
-        std::map<std::string,int> byname;
-        std::map<std::string,int> bywriter;
+        std::map<std::string,std::vector<int>> byname;
+        std::map<std::string,std::vector<int>> bywriter;
         std::map<std::string,int> byISBN;
         user_info *mine;  
 };

@@ -6,6 +6,12 @@ class func;
 
 class book{
     public:
+        bool borrowed;
+        void output_menu(func &now);
+        void change();
+        void remove();
+        void change_menu();
+
         std::string book_name;
         std::string writer;
         std::string ISBN;
@@ -13,7 +19,4 @@ class book{
         std::string data;
         std::string entry;
         std::string master;
-        bool borrowed;
-        void output_menu(func &now);
-        void change();
 };

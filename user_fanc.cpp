@@ -1,6 +1,41 @@
 #include "user_fanc.h"
+#include <sstream>
 
 namespace fs=std::filesystem;
+
+static std::string trim_u(const std::string& s){
+    size_t a = s.find_first_not_of(' ');
+    size_t b = s.find_last_not_of(' ');
+    if(a==std::string::npos) return "";
+    return s.substr(a, b-a+1);
+}
+
+static std::string serialize_user_line(const user_info& u){
+    return u.username + " | " + std::to_string(u.password) + " | " + u.level + " | " + std::to_string(u.book_num);
+}
+
+static bool deserialize_user_line(const std::string& line, user_info& out){
+    if(line.find('|') != std::string::npos){
+        std::vector<size_t> pos;
+        for(size_t i=0;i<line.size() && pos.size()<3;i++){
+            if(line[i]=='|') pos.push_back(i);
+        }
+        if(pos.size()<3) return false;
+        std::string f1 = trim_u(line.substr(0, pos[0]));
+        std::string f2 = trim_u(line.substr(pos[0]+1, pos[1]-pos[0]-1));
+        std::string f3 = trim_u(line.substr(pos[1]+1, pos[2]-pos[1]-1));
+        std::string f4 = trim_u(line.substr(pos[2]+1));
+        out.username = f1;
+        try { out.password = (size_t)std::stoull(f2); } catch(...) { out.password = 0; }
+        out.level = f3;
+        try { out.book_num = std::stoi(f4); } catch(...) { out.book_num = 0; }
+        return true;
+    } else {
+        std::istringstream iss(line);
+        if(!(iss >> out.username >> out.password >> out.level >> out.book_num)) return false;
+        return true;
+    }
+}
 
 void user_info::output_menu(func &now){
     std::vector<std::string> info = {
@@ -11,6 +46,7 @@ void user_info::output_menu(func &now){
     draw_box("用户信息", info);
     int op;
     while(1){
+        menus::clear();
         draw_box("操作",{"1.查看借阅详情","2.更改密码","3.返回"});
         std::cin>>op;
         switch(op){
@@ -49,7 +85,7 @@ void user_info::change_password(){
             std::cerr << "无法打开文件: " << entry << std::endl;
             return;
             }
-            out << username <<' '<< password <<' '<<  level <<' '<< book_num <<std::endl;
+            out << serialize_user_line(*this) << std::endl;
             for(int i=0;i<book_num;i++){
                 out<<borrowed_ISBN[i]<<std::endl;
             }
@@ -133,7 +169,7 @@ void user_info::change(){
         std::cerr << "无法打开文件: " << entry << std::endl;
         return;
         }
-        out << username <<' '<< password <<' '<<  level <<' '<< book_num <<std::endl;
+        out << serialize_user_line(*this) << std::endl;
         for(int i=0;i<book_num;i++){
             out<<borrowed_ISBN[i]<<std::endl;
         }
@@ -149,24 +185,29 @@ fanc::fanc(func &now){
 void fanc::reload(func &now){
     users.clear();
     fs::path p="./users";
-        if (!exists(p)) {
-            create_directory(p);
-        }
-        int id=0;
+    if (!exists(p)) {
+        create_directory(p);
+    }
+    int id=0;
     for (const auto& entry : fs::directory_iterator(p)) {
         std::ifstream file(entry.path());
         if (file.is_open()) {
             user_info tmp;tmp.entry=entry.path();
-            if(file >> tmp.username >> tmp.password >> tmp.level >> tmp.book_num){
-                mp[tmp.username]=++id;
-                std::string str;
-                for(int i=1;i<=tmp.book_num;i++){
-                   file>>str;
-                   tmp.borrowed_ISBN.push_back(str);
-                   int idx = now.byISBN[str];
-                   if(idx > 0 && idx <= (int)now.book_list.size()) tmp.borrowed_book.push_back(now.book_list[idx-1]);
+            std::string header;
+            if(std::getline(file, header)){
+                if(deserialize_user_line(header, tmp)){
+                    mp[tmp.username]=++id;
+                    std::string str;
+                    for(int i=0;i<tmp.book_num;i++){
+                        if(!std::getline(file, str)) break;
+                        str = trim_u(str);
+                        if(str.empty()) continue;
+                        tmp.borrowed_ISBN.push_back(str);
+                        int idx = now.byISBN[str];
+                        if(idx > 0 && idx <= (int)now.book_list.size()) tmp.borrowed_book.push_back(now.book_list[idx-1]);
+                    }
+                    users.push_back(tmp);
                 }
-                users.push_back(tmp);
             }
             file.close();
         }
@@ -227,7 +268,7 @@ void fanc::look_user_menu(){
                               << std::left << std::setw(10) << ((users[i].level=="admin")?"管理员":"用户") << " | "
                               << users[i].borrowed_book.size() << std::endl;
                 }
-                draw_box("操作", {"输入代号查看详情", "按e退出", "按b上一页", "按n下一页"});
+                draw_box("操作", {"输入代号查看详情", "按e退出", ((now)?"按b上一页":""), ((now+9<n)?"按n下一页":"")});
                 std::cin>>op;
                 if(isdigit(op)){
                     int idx = now + (op - '0');
@@ -293,7 +334,7 @@ void fanc::add_user(int mod){
         std::cerr << "无法打开文件: " << tmp.entry << std::endl;
         return;
         }
-        out << tmp.username <<' '<< tmp.password <<' '<<  tmp.level <<' '<< 0 ;
+        out << serialize_user_line(tmp) << std::endl;
         out.close();
         users.push_back(tmp);
         mp[tmp.username] = users.size();

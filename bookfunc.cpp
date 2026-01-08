@@ -1,7 +1,73 @@
 #include "bookfunc.h"
 #include <limits>
+#include <sstream>
+#include <algorithm>
 
 namespace fs=std::filesystem;
+
+static std::string trim(const std::string& s){
+    size_t a = s.find_first_not_of(' ');
+    size_t b = s.find_last_not_of(' ');
+    if(a==std::string::npos) return "";
+    return s.substr(a, b-a+1);
+}
+
+static std::string serialize_book_line(const book& b){
+    return b.book_name + " | " + b.writer + " | " + b.ISBN + " | " + b.data + " | " + (b.borrowed?"1":"0") + " | " + b.master + " | " + b.content;
+}
+
+static bool deserialize_book_line(const std::string& line, book& out){
+    if(line.find('|') != std::string::npos){
+        std::vector<size_t> pos;
+        for(size_t i=0;i<line.size() && pos.size()<6;i++){
+            if(line[i]=='|') pos.push_back(i);
+        }
+        if(pos.size()<6) return false;
+        std::string f1 = trim(line.substr(0, pos[0]));
+        std::string f2 = trim(line.substr(pos[0]+1, pos[1]-pos[0]-1));
+        std::string f3 = trim(line.substr(pos[1]+1, pos[2]-pos[1]-1));
+        std::string f4 = trim(line.substr(pos[2]+1, pos[3]-pos[2]-1));
+        std::string f5 = trim(line.substr(pos[3]+1, pos[4]-pos[3]-1));
+        std::string f6 = trim(line.substr(pos[4]+1, pos[5]-pos[4]-1));
+        std::string f7 = trim(line.substr(pos[5]+1));
+        out.book_name = f1;
+        out.writer = f2;
+        out.ISBN = f3;
+        out.data = f4;
+        out.borrowed = (f5=="1"||f5=="true") ? 1 : 0;
+        out.master = f6;
+        out.content = f7;
+        return true;
+    }else{
+        std::istringstream iss(line);
+        if(!(iss >> out.book_name >> out.writer >> out.ISBN >> out.data >> out.borrowed >> out.master)) return false;
+        std::string rest;
+        std::getline(iss, rest);
+        out.content = trim(rest);
+        return true;
+    }
+}
+
+void book::remove(){
+    std::remove(entry.c_str());
+} 
+
+void book::change_menu(){
+    int op;
+    while(1){
+        menus::clear();
+        draw_box("操作",{"1.更改","2.删除","3.退出"});
+        std::cin>>op;
+        switch(op){
+            case 1:{change();break;}
+            case 2:{remove();break;}
+            case 3:{return;break;}
+            default :{
+                menus::error_menu();
+            }
+        }
+    }
+}
 
 void book::output_menu(func &now){
     std::vector<std::string> info = {
@@ -18,13 +84,24 @@ void book::output_menu(func &now){
         menus::clear();
         std::vector<std::string> options = {"1.查看内容"};
         if(!borrowed) options.push_back("2.借阅");
-        if(master==now.mine->username) options.push_back("3.归还");
+        if(master==now.mine->username) options.push_back("2.归还");
+        if(now.mine->level=="admin") options.push_back("3.更改");
         options.push_back("e.退出");
         draw_box("操作", options);
         std::cin >> op;
         if(op=='1'){
             menus::clear();
-            draw_box("内容", {content});
+            std::vector<std::string> content_lines;
+            std::string line;
+            std::istringstream iss(content);
+            while(std::getline(iss, line)){
+                content_lines.push_back(line);
+            }
+            if(content_lines.empty() || (content_lines.size() == 1 && content_lines[0].empty())){
+                content_lines.clear();
+                content_lines.push_back(content.empty() ? "(空)" : content);
+            }
+            draw_box("内容", content_lines);
             std::cin.clear();
 		    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		    std::this_thread::sleep_for(std::chrono::milliseconds(233));
@@ -32,14 +109,14 @@ void book::output_menu(func &now){
         else if(op=='e'){
             return;
         }
-        else if(op=='3'&&master==now.mine->username){
+        else if(op=='2'&&master==now.mine->username){
             borrowed=0;master="无";
             std::ofstream out(entry);
             if (!out.is_open()) {
             std::cerr << "无法打开文件: " << entry << std::endl;
             return;
             }
-            out << book_name <<' '<< writer <<' '<<  ISBN <<' '<< data <<' '<< borrowed <<' '<< master <<' '<<content;
+            out << serialize_book_line(*this);
             out.close();
             for(auto i=now.mine->borrowed_ISBN.begin();i!=now.mine->borrowed_ISBN.end();i++){
                 if(*i==ISBN){
@@ -57,7 +134,7 @@ void book::output_menu(func &now){
             std::cerr << "无法打开文件: " << now.mine->entry << std::endl;
             return;
             }
-            tout << now.mine->username <<' '<< now.mine->password <<' '<<  now.mine->level <<' '<<now.mine->book_num<<std::endl;
+            tout << now.mine->username << " | " << now.mine->password << " | " << now.mine->level << " | " << now.mine->book_num << std::endl;
             for(std::string s:now.mine->borrowed_ISBN){
                 tout<< s << std::endl;
             }
@@ -75,7 +152,7 @@ void book::output_menu(func &now){
             std::cerr << "无法打开文件: " << entry << std::endl;
             return;
             }
-            out << book_name <<' '<< writer <<' '<<  ISBN <<' '<< data <<' '<< borrowed <<' '<< master <<' '<<content;
+            out << serialize_book_line(*this);
             out.close();
             now.mine->borrowed_ISBN.push_back(ISBN);
             now.mine->book_num++;
@@ -85,7 +162,7 @@ void book::output_menu(func &now){
             std::cerr << "无法打开文件: " << now.mine->entry << std::endl;
             return;
             }
-            tout << now.mine->username <<' '<< now.mine->password <<' '<<  now.mine->level <<' '<<now.mine->book_num<<std::endl;
+            tout << now.mine->username << " | " << now.mine->password << " | " << now.mine->level << " | " << now.mine->book_num << std::endl;
             for(std::string s:now.mine->borrowed_ISBN){
                 tout<< s << std::endl;
             }
@@ -95,6 +172,9 @@ void book::output_menu(func &now){
             std::cin.clear();
 		    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		    std::this_thread::sleep_for(std::chrono::milliseconds(233));
+        }
+        else if(op=='3'&&now.mine->level=="admin"){
+            change();
         }
         else{
             menus::error_menu();
@@ -154,9 +234,11 @@ void book::change(){
             menus::clear();
             draw_box("原内容", {content});
             draw_box("输入", {"请输入更改后内容,输入单个字符串\"end\"结束"});
-            std::string tmp,res;
-            std::getline(std::cin,tmp,'\n');
-            while(tmp!="end"){res+=tmp+'\n';std::getline(std::cin,tmp,'\n');}
+            std::string line,res;
+            std::cin.ignore();
+            while(std::getline(std::cin,line) && line!="end"){
+                res+=line+'\n';
+            }
             content=res;
             draw_box("成功", {"更改成功"});break;
         }
@@ -173,7 +255,7 @@ void book::change(){
         std::cerr << "无法打开文件: " << entry << std::endl;
         return;
         }
-        out << book_name <<' '<< writer <<' '<<  ISBN <<' '<< data <<' '<< borrowed <<' '<< master <<' '<<content;
+        out << serialize_book_line(*this);
         out.close();
     }
 }
@@ -181,18 +263,23 @@ void book::change(){
 void func::reload(){
     byname.clear();bywriter.clear();byISBN.clear();book_list.clear();
     fs::path p="./books";
-        if (!exists(p)) {
-            create_directory(p);
-        }
-        int id=0;
+    if (!exists(p)) {
+        create_directory(p);
+    }
+    int id=0;
     for (const auto& entry : fs::directory_iterator(p)) {
         std::ifstream file(entry.path());
         if (file.is_open()) {
-            book tmp;tmp.entry=entry.path();
-            file >> tmp.book_name >> tmp.writer >> tmp.ISBN >> tmp.data >> tmp.borrowed >> tmp.master;
-            std::getline(file,tmp.content);
-            book_list.push_back(tmp);
-            byname[tmp.book_name]=bywriter[tmp.writer]=byISBN[tmp.ISBN]=++id;
+            std::string line;
+            if(std::getline(file, line, '\0')){
+                book tmp; tmp.entry = entry.path();
+                if(deserialize_book_line(line, tmp)){
+                    book_list.push_back(tmp);
+                    byISBN[tmp.ISBN]=++id;
+                    byname[tmp.book_name].push_back(id);
+                    bywriter[tmp.writer].push_back(id);
+                }
+            }
             file.close();
         }
     }
@@ -230,7 +317,6 @@ void func::search_book_menu(int mod){
 }
 void func::search_name_menu(int mod){
     std::string name; 
-    int tmpid;
     while(1){
         menus::clear();
         draw_box("搜索书名", {"请输入书名进行查询，按'e'返回"});
@@ -238,27 +324,34 @@ void func::search_name_menu(int mod){
         if(name=="e"){
             return;
         }
-        tmpid=byname[name];
-        if(!tmpid){
+        if(byname.find(name)==byname.end() || byname[name].empty()){
+            menus::error_menu();
+            continue;
+        }
+        std::vector<book> tmp;
+        for(int idx : byname[name]){
+            if(idx > 0 && idx <= (int)book_list.size()){
+                tmp.push_back(book_list[idx-1]);
+            }
+        }
+        if(tmp.empty()){
             menus::error_menu();
             continue;
         }
         if(mod==1){
-            book_list[tmpid-1].change();
+            look_book(tmp);
         }
         else if(mod==2){
-            std::remove(book_list[tmpid-1].entry.c_str());
+            look_book(tmp);
             reload();
         }
         else{
-            draw_box("查询结果", {"结果如下:"});
-            book_list[tmpid-1].output_menu(*this);
+            look_book(tmp);
         }
     }
 }
 void func::search_writer_menu(int mod){
     std::string name; 
-    int tmpid;
     while(1){
         menus::clear();
         draw_box("搜索作者", {"请输入作者进行查询，按'e'返回"});
@@ -266,21 +359,29 @@ void func::search_writer_menu(int mod){
         if(name=="e"){
             return;
         }
-        tmpid=bywriter[name];
-        if(!tmpid){
+        if(bywriter.find(name)==bywriter.end() || bywriter[name].empty()){
+            menus::error_menu();
+            continue;
+        }
+        std::vector<book> tmp;
+        for(int idx : bywriter[name]){
+            if(idx > 0 && idx <= (int)book_list.size()){
+                tmp.push_back(book_list[idx-1]);
+            }
+        }
+        if(tmp.empty()){
             menus::error_menu();
             continue;
         }
         if(mod==1){
-            book_list[tmpid-1].change();
+            look_book(tmp);
         }
         else if(mod==2){
-            std::remove(book_list[tmpid-1].entry.c_str());
+            look_book(tmp);
             reload();
         }
         else{
-            draw_box("查询结果", {"结果如下:"});
-            book_list[tmpid-1].output_menu(*this);
+            look_book(tmp);
         }   
     }
 
@@ -373,7 +474,7 @@ void func::look_book(std::vector<book> books){
                               << format_table_cell(books[i].ISBN, 10) << " | "
                               << format_table_cell(books[i].borrowed ? "已借阅" : "未借阅", 6) << std::endl;
                 }
-                draw_box("操作", {"输入代号查看详情", "按e退出", "按b上一页", "按n下一页"});
+                draw_box("操作", {"输入代号查看详情", "按e退出", ((now)?"按b上一页":""), ((now+9<n)?"按n下一页":"")});
                 std::cin>>op;
                 if(isdigit(op)){
                     menus::clear();
@@ -402,18 +503,12 @@ void func::add_book_menu(){
     book tmp;
     while(1){
         std::cin>>tmp.book_name;
-        if(byname[tmp.book_name]){
-        draw_box("错误", {"已存在此书名，请重新输入"});
-        }
-        else break;
+        break;
     }
     draw_box("输入作者", {"请输入作者"});
     while(1){
         std::cin>>tmp.writer;
-        if(bywriter[tmp.writer]){
-        draw_box("错误", {"已存在此作者，请重新输入"});
-        }
-        else break;
+        break;
     }
     draw_box("输入ISBN/ISSN", {"请输入ISBN/ISSN"});
     while(1){
@@ -427,20 +522,26 @@ void func::add_book_menu(){
     std::cin>>tmp.data;
     tmp.borrowed=0;
     tmp.master="无";
-    draw_box("输入内容", {"请输入内容"});
-    std::cin.ignore(); // 忽略换行
-    std::getline(std::cin, tmp.content);
-    tmp.entry="./books/"+tmp.book_name;
+    draw_box("输入内容", {"请输入内容,输入单个字符串\"end\"结束"});
+    std::string line,res;
+    std::cin.ignore();
+    while(std::getline(std::cin,line) && line!="end"){
+        res+=line+'\n';
+    }
+    tmp.content=res;
+    tmp.entry="./books/"+std::to_string(hash(tmp.book_name+tmp.writer));
     std::ofstream out(tmp.entry);
         if (!out.is_open()) {
         std::cerr << "无法打开文件: " << tmp.entry << std::endl;
         return;
         }
-        out << tmp.book_name <<' '<< tmp.writer <<' '<<  tmp.ISBN <<' '<< tmp.data <<' '<< tmp.borrowed <<' '<< tmp.content;
+        out << serialize_book_line(tmp);
         out.close();
         int id=book_list.size();
         book_list.push_back(tmp);
-        byname[tmp.book_name]=bywriter[tmp.writer]=byISBN[tmp.ISBN]=id;
+        byname[tmp.book_name].push_back(id);
+        bywriter[tmp.writer].push_back(id);
+        byISBN[tmp.ISBN]=id;
         draw_box("成功", {"添加成功"});
         menus::clear();
 }

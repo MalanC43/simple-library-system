@@ -1,4 +1,5 @@
 #include "library.h"
+#include "menufunc.h"
 
 void library::menu(){
     while(1){
