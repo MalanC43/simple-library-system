@@ -448,60 +448,56 @@ void func::manage_book(){
 void func::look_book(std::vector<book> books){
     int n=(int)books.size(),now=0;
     char op;
-    menus::clear();
     while(1){
-        draw_box("书籍列表", {"代号 | 书名 | 作者 | ISBN | 借阅情况"});
-            if(now+9>=n){
-                for(int i=now;i<n;i++){
-                    std::cout << format_table_cell(std::to_string(i-now), 3) << " | "
-                              << format_table_cell(books[i].book_name, 10) << " | "
-                              << format_table_cell(books[i].writer, 8) << " | "
-                              << format_table_cell(books[i].ISBN, 10) << " | "
-                              << format_table_cell(books[i].borrowed ? "已借阅" : "未借阅", 6) << std::endl;
-                }
-                draw_box("操作", {"输入代号查看详情", "按e退出", (now ? "按b上一页" : "")});
-                std::cin>>op;
-                if(isdigit(op)){
-                    menus::clear();
-                    books[now+(op-'0')].output_menu(*this);
-                }
-                else if(op=='b'&&now){
-                    now-=10;
-                }
-                else if(op=='e'){
-                    return;
-                }
-                else{
-                menus::error_menu();
-                }
+        menus::clear();
+        std::vector<std::string> book_lines;
+        book_lines.push_back(format_table_cell("代号", 4) + "| " + format_table_cell("书名", 30) + "| " + format_table_cell("作者", 16) + "| " + format_table_cell("ISBN", 14) + "| " + "借阅情况");
+        
+        if(now+9>=n){
+            for(int i=now;i<n;i++){
+                book_lines.push_back(format_table_cell(std::to_string(i-now), 4) + "| " + 
+                                    format_table_cell(books[i].book_name, 30) + "| " + 
+                                    format_table_cell(books[i].writer, 16) + "| " + 
+                                    format_table_cell(books[i].ISBN, 14) + "| " + 
+                                    (books[i].borrowed ? "已借阅" : "未借阅"));
             }
-            else{
-                for(int i=now;i<now+9;i++){
-                    std::cout << format_table_cell(std::to_string(i-now), 3) << " | "
-                              << format_table_cell(books[i].book_name, 10) << " | "
-                              << format_table_cell(books[i].writer, 8) << " | "
-                              << format_table_cell(books[i].ISBN, 10) << " | "
-                              << format_table_cell(books[i].borrowed ? "已借阅" : "未借阅", 6) << std::endl;
-                }
-                draw_box("操作", {"输入代号查看详情", "按e退出", ((now)?"按b上一页":""), ((now+9<n)?"按n下一页":"")});
-                std::cin>>op;
-                if(isdigit(op)){
-                    menus::clear();
-                    books[now+(op-'0')].output_menu(*this);
-                }
-                else if(op=='b'&&now>0){
-                    now-=10;
-                }
-                else if(op=='e'){
-                    return;
-                }
-                else if(op=='n'&&now+9<n){
-                    now+=10;
-                }
-                else{
-                menus::error_menu();
-                }
+            draw_box("书籍列表", book_lines);
+            draw_box("操作", {"输入代号查看详情", "按e退出", (now ? "按b上一页" : "")});
+        }
+        else{
+            for(int i=now;i<now+10;i++){
+                book_lines.push_back(format_table_cell(std::to_string(i-now), 4) + "| " + 
+                                    format_table_cell(books[i].book_name, 30) + "| " + 
+                                    format_table_cell(books[i].writer, 16) + "| " + 
+                                    format_table_cell(books[i].ISBN, 14) + "| " + 
+                                    (books[i].borrowed ? "已借阅" : "未借阅"));
             }
+            draw_box("书籍列表", book_lines);
+            draw_box("操作", {"输入代号查看详情", "按e退出", ((now)?"按b上一页":""), ((now+9<n)?"按n下一页":"")});
+        }
+        
+        std::cin>>op;
+        if(isdigit(op)){
+            int idx = now + (op - '0');
+            if(idx >= 0 && idx < n){
+                menus::clear();
+                books[idx].output_menu(*this);
+            } else {
+                menus::error_menu();
+            }
+        }
+        else if(op=='b'&&now>0){
+            now-=10;
+        }
+        else if(op=='e'){
+            return;
+        }
+        else if(op=='n'&&now+10<n){
+            now+=10;
+        }
+        else{
+            menus::error_menu();
+        }
         menus::clear();
     }
 }

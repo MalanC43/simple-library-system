@@ -231,70 +231,54 @@ void fanc::look_user_menu(){
     char op;
     while(1){
         menus::clear();
-        draw_box("用户列表", {"代号 | 用户名 | 身份 | 借阅书籍数"});
-        std::cout << std::string(50, '-') << std::endl;
-            if(now+9>=n){
-                for(int i=now;i<n;i++){
-                    std::cout << std::left << std::setw(5) << (i-now) << " | "
-                              << std::left << std::setw(15) << users[i].username << " | "
-                              << std::left << std::setw(10) << ((users[i].level=="admin")?"管理员":"用户") << " | "
-                              << users[i].borrowed_book.size() << std::endl;
-                }
-                draw_box("操作", {"输入代号查看详情", "按e退出", (now ? "按b上一页" : "")});
-                std::cin>>op;
-                if(isdigit(op)){
-                    int idx = now + (op - '0');
-                    if(idx >= 0 && idx < n){
-                        menus::clear();
-                        users[idx].output_menu(*sys);
-                    } else {
-                        menus::error_menu();
-                    }
-                }
-                else if(op=='b'&&now>0){
-                    now-=10;
-                }
-                else if(op=='e'){
-                    return;
-                }
-                else{
-                menus::error_menu();
-                }
+        std::vector<std::string> user_lines;
+        user_lines.push_back(format_table_cell("代号", 4) + "| " + format_table_cell("用户名", 16) + "| " + format_table_cell("身份", 10) + "| " + "借阅书籍数");
+        
+        if(now+9>=n){
+            for(int i=now;i<n;i++){
+                user_lines.push_back(format_table_cell(std::to_string(i-now), 4) + "| " + 
+                                    format_table_cell(users[i].username, 16) + "| " + 
+                                    format_table_cell((users[i].level=="admin")?"管理员":"用户", 10) + "| " + 
+                                    std::to_string(users[i].borrowed_book.size()));
             }
-            else{
-                for(int i=now;i<now+9;i++){
-                    std::cout << std::left << std::setw(5) << (i-now) << " | "
-                              << std::left << std::setw(15) << users[i].username << " | "
-                              << std::left << std::setw(10) << ((users[i].level=="admin")?"管理员":"用户") << " | "
-                              << users[i].borrowed_book.size() << std::endl;
-                }
-                draw_box("操作", {"输入代号查看详情", "按e退出", ((now)?"按b上一页":""), ((now+9<n)?"按n下一页":"")});
-                std::cin>>op;
-                if(isdigit(op)){
-                    int idx = now + (op - '0');
-                    if(idx >= 0 && idx < n){
-                        menus::clear();
-                        users[idx].output_menu(*sys);
-                    } else {
-                        menus::error_menu();
-                    }
-                }
-                else if(op=='b'&&now>0){
-                    now-=10;
-                }
-                else if(op=='e'){
-                    return;
-                }
-                else if(op=='n'&&now+9<n){
-                    now+=10;
-                }
-                else{
-                menus::error_menu();
-                }
+            draw_box("用户列表", user_lines);
+            draw_box("操作", {"输入代号查看详情", "按e退出", (now ? "按b上一页" : "")});
+        }
+        else{
+            for(int i=now;i<now+10;i++){
+                user_lines.push_back(format_table_cell(std::to_string(i-now), 4) + "| " + 
+                                    format_table_cell(users[i].username, 16) + "| " + 
+                                    format_table_cell((users[i].level=="admin")?"管理员":"用户", 10) + "| " + 
+                                    std::to_string(users[i].borrowed_book.size()));
             }
+            draw_box("用户列表", user_lines);
+            draw_box("操作", {"输入代号查看详情", "按e退出", ((now)?"按b上一页":""), ((now+9<n)?"按n下一页":"")});
+        }
+        
+        std::cin>>op;
+        if(isdigit(op)){
+            int idx = now + (op - '0');
+            if(idx >= 0 && idx < n){
+                menus::clear();
+                users[idx].output_menu(*sys);
+            } else {
+                menus::error_menu();
+            }
+        }
+        else if(op=='b'&&now>0){
+            now-=10;
+        }
+        else if(op=='e'){
+            return;
+        }
+        else if(op=='n'&&now+10<n){
+            now+=10;
+        }
+        else{
+            menus::error_menu();
+        }
         menus::clear();
     }
-    
 }
 
 void fanc::add_user(int mod){
