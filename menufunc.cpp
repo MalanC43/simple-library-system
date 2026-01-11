@@ -2,7 +2,9 @@
 #include <limits>
 #include <vector>
 #include <string>
-#define testing
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#endif
 
 // 计算字符串的终端显示宽度（处理中文和ANSI转义码）此函数由ai完成，实在不知道怎么给中文对齐了
 size_t get_display_width(const std::string& str) {
@@ -54,21 +56,44 @@ void draw_box(const std::string& title, const std::vector<std::string>& lines) {
         size_t w = get_display_width(line);
         if (w > max_width) max_width = w;
     }
-    
+
+    // Windows 控制台默认不支持 ANSI，需要尝试开启；失败则禁用颜色
     std::string color_code;
-    if (title == "错误") {
-        color_code = "\033[31m"; // 红色
-    } else if (title == "成功") {
-        color_code = "\033[32m"; // 绿色
-    } else {
-        color_code = "\033[34m"; // 蓝色
+    std::string reset_code = "\033[0m";
+#if defined(_WIN32) || defined(_WIN64)
+    static bool vt_checked = false;
+    static bool vt_enabled = false;
+    if (!vt_checked) {
+        HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+        if (hOut != INVALID_HANDLE_VALUE) {
+            DWORD mode = 0;
+            if (GetConsoleMode(hOut, &mode)) {
+                if (SetConsoleMode(hOut, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+                    vt_enabled = true;
+                }
+            }
+        }
+        vt_checked = true;
     }
-    
+    if (!vt_enabled) {
+        color_code.clear();
+        reset_code.clear();
+    }
+#endif
+
+    if (title == "错误") {
+        color_code += "\033[31m"; // 红色
+    } else if (title == "成功") {
+        color_code += "\033[32m"; // 绿色
+    } else {
+        color_code += "\033[34m"; // 蓝色
+    }
+
     std::string border = "*" + std::string(max_width + 2, '*') + "*";
     
     size_t title_display_width = get_display_width(title);
     size_t title_padding = max_width - title_display_width;
-    std::string title_line = "* " + color_code + title + "\033[0m" + std::string(title_padding, ' ') + " *";
+    std::string title_line = "* " + color_code + title + reset_code + std::string(title_padding, ' ') + " *";
     
     std::cout << border << std::endl;
     std::cout << title_line << std::endl;
@@ -95,11 +120,11 @@ namespace menus{
     std::cin.clear();
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	std::this_thread::sleep_for(std::chrono::milliseconds(233));    
-    #ifdef testing 
-    system("clear");
-    #else 
+#if defined(_WIN32) || defined(_WIN64)
     system("cls");
-    #endif
+#else
+    system("clear");
+#endif
     }
 };
 

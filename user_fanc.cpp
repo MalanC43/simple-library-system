@@ -38,6 +38,7 @@ static bool deserialize_user_line(const std::string& line, user_info& out){
 }
 
 void user_info::output_menu(func &now){
+    menus::clear();
     std::vector<std::string> info = {
         "用户名: " + username,
         "身份: " + std::string((level=="admin")?"管理员":"用户"),
@@ -46,7 +47,6 @@ void user_info::output_menu(func &now){
     draw_box("用户信息", info);
     int op;
     while(1){
-        menus::clear();
         draw_box("操作",{"1.查看借阅详情","2.更改密码","3.返回"});
         std::cin>>op;
         switch(op){
@@ -57,6 +57,7 @@ void user_info::output_menu(func &now){
                 menus::error_menu();
             }
         }
+         menus::clear();
     }
 }
 
@@ -192,7 +193,7 @@ void fanc::reload(func &now){
     for (const auto& entry : fs::directory_iterator(p)) {
         std::ifstream file(entry.path());
         if (file.is_open()) {
-            user_info tmp;tmp.entry=entry.path();
+            user_info tmp;tmp.entry=entry.path().string();
             std::string header;
             if(std::getline(file, header)){
                 if(deserialize_user_line(header, tmp)){

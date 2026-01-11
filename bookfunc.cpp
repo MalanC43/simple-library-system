@@ -152,9 +152,11 @@ void book::output_menu(func &now){
             std::cin.clear();
 		    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		    std::this_thread::sleep_for(std::chrono::milliseconds(233));
+            now.reload();
         }
         else if(op=='2'&&!borrowed){
             borrowed=1;master=now.mine->username;
+            std::remove(entry.c_str());
             std::ofstream out(entry);
             if (!out.is_open()) {
             std::cerr << "无法打开文件: " << entry << std::endl;
@@ -166,6 +168,7 @@ void book::output_menu(func &now){
             now.mine->borrowed_ISBN.push_back(ISBN);
             now.mine->book_num++;
             now.mine->borrowed_book.push_back(*this);
+            
             std::ofstream tout(now.mine->entry);
             if (!tout.is_open()) {
             std::cerr << "无法打开文件: " << now.mine->entry << std::endl;
@@ -181,6 +184,7 @@ void book::output_menu(func &now){
             std::cin.clear();
 		    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		    std::this_thread::sleep_for(std::chrono::milliseconds(233));
+            now.reload();
         }
         else if(op=='3'&&now.mine->level=="admin"){
             change();
@@ -281,7 +285,7 @@ void func::reload(){
         if (file.is_open()) {
             std::string line;
             if(std::getline(file, line, '\0')){
-                book tmp; tmp.entry = entry.path();
+                book tmp; tmp.entry = entry.path().string();
                 if(deserialize_book_line(line, tmp)){
                     book_list.push_back(tmp);
                     byISBN[tmp.ISBN]=++id;
